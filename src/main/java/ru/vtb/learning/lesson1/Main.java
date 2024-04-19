@@ -1,4 +1,4 @@
-package ru.vtb.learning;
+package ru.vtb.learning.lesson1;
 
 public class Main {
     public static void main(String[] args) {

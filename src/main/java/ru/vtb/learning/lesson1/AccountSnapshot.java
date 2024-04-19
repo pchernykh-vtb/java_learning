@@ -1,4 +1,4 @@
-package ru.vtb.learning;
+package ru.vtb.learning.lesson1;
 
 import java.util.HashMap;
 import java.util.Objects;

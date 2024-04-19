@@ -1,4 +1,4 @@
-package ru.vtb.learning;
+package ru.vtb.learning.lesson1;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
