@@ -26,6 +26,8 @@ public class CachingProxy implements InvocationHandler {
                 cachedValue = method.invoke(originalObject, args);
                 cached = true;
             }
+        }else {
+            return method.invoke(originalObject, args);
         }
         return cachedValue;
     }
