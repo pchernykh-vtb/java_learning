@@ -5,7 +5,6 @@ public class Main {
         Fractionable fraction = new Fraction(0, 0);
 
         fraction = Utils.cache(fraction);
-        System.out.println(fraction);
         fraction.setNum(1);
         fraction.setDenum(2);
         System.out.println(fraction.doubleValue());

@@ -1,5 +1,7 @@
 package ru.vtb.learning.lesson3;
 
+import java.time.Instant;
+
 public interface CacheClearable {
-    public void removeOldResults ();
+    public Instant removeOldResults ();
 }

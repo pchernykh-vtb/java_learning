@@ -37,14 +37,23 @@ public class CachingProxy implements InvocationHandler, CacheClearable {
             Cache cacheAnnotation = originalMethod.getAnnotation(Cache.class);
 
             CacheResult result = null;
-            result = results.get(key);
-            if (result == null) {
-                result = new CacheResult(method.invoke(originalObject, args), Instant.now().plusMillis(cacheAnnotation.lifetime()));
-                results.put(key, result);
-            } else {
-                // Обновляем метку времени.
-                result.setLiveUntil(Instant.now().plusMillis(cacheAnnotation.lifetime()));
-                results.put(key, result);
+            synchronized (state) {
+                // Блокирует больше, чем надо (нельзя будет работать с кэшем для другого метода с таким же состоянием),
+                // но как достать Entity из Map, чтобы заблокировать конкретную запись, не нашёл.
+                result = results.get(key);
+                if (result == null) {
+                    result = new CacheResult(method.invoke(originalObject, args), Instant.now().plusMillis(cacheAnnotation.lifetime()));
+                    results.put(key, result);
+                } else {
+                    // Обновляем метку времени.
+                    result.setLiveUntil(Instant.now().plusMillis(cacheAnnotation.lifetime()));
+                    results.put(key, result);
+                }
+            }
+            // Так как в кэше теперь точно что-то есть, пробуждаем чистильщик старых кэшей.
+            Object lock = Utils.getLockObject();
+            synchronized (lock) {
+                lock.notify();
             }
 
             return result.getResult();
@@ -54,11 +63,19 @@ public class CachingProxy implements InvocationHandler, CacheClearable {
     }
 
     @Override
-    public void removeOldResults () {
-        for (var result: results.entrySet()) {
-            if (result.getValue().getLiveUntil().isBefore(Instant.now())) {
-                results.remove(result.getKey());
+    // Возвращает ближайший момент чистки кэша (минимум из отметок срока жизни).
+    public Instant removeOldResults () {
+        synchronized (results) {
+            Instant closestRemove = Instant.MAX;
+            for (var result: results.entrySet()) {
+                Instant liveUntil = result.getValue().getLiveUntil();
+                if (liveUntil.isBefore(Instant.now())) {
+                    results.remove(result.getKey());
+                } else {
+                    closestRemove = liveUntil == null ? closestRemove : (closestRemove.isAfter(liveUntil) ? liveUntil : closestRemove);
+                }
             }
+            return closestRemove;
         }
     }
 
